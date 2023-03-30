@@ -26,7 +26,7 @@ bot.command("ask", (ctx) => {
       };
       axios(config)
         .then((response) => {
-          console.log(response.data);
+         //9 console.log(response.data);
           ctx.reply(response.data.choices[0].text)
         })
         .catch((error) => {
