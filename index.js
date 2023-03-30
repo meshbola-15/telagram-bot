@@ -1,63 +1,75 @@
-// import Telegraf from "telegraf";
-// import { apiKey, completions } from "openai";
-
-const { Telegraf } = require("telegraf");
-const { Configuration, OpenAIApi } = require("openai");
+const { Telegraf, Input } = require("telegraf");
 const { message } = require("telegraf/filters");
-
-const configuration = new Configuration({
-  apiKey: "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",
-});
-
-// async function getData(ctx) {
-//   //   console.warn(ctx);
-//   const res = await openai.createCompletion({
-//     model: "text-davinci-003",
-//     prompt: ctx.update.message.text,
-//     temperature: 0.1,
-//     max_tokens: 1024,
-//     top_p: 1,
-//     n: 1,
-//     stream: false,
-//     logprobs: null,
-//     stop: "\n",
-//   });
-
-//   //   console.log(res);
-
-//   const message = res;
-//   ctx.reply(ctx.update.message.text + message);
-//   console.log(ctx.update.message.text + message);
-// }
-
-const openai = new OpenAIApi(configuration);
+const axios = require("axios")
 const bot = new Telegraf("6266832958:AAEpDxRI7leRBaEx5XfjPCNQTKrFiGikEIg");
 
-bot.start((ctx) => ctx.reply("Welcome"));
+bot.start((ctx) => ctx.reply("Welcome /ask /image"));
 
-bot.command("chat", (ctx) => {
+bot.command("ask", (ctx) => {
   ctx.reply("Please enter your prompt:");
-});
 
-bot.on(message("text"), async (ctx) => {
-  const res = await openai.createCompletion({
-    model: "text-davinci-003",
-    prompt: ctx.update.message.text,
-    temperature: 0.1,
-    max_tokens: 1024,
-    top_p: 1,
-    n: 1,
-    stream: false,
-    logprobs: null,
-    stop: "\n",
+  bot.on(message("text"), async (ctx) => {
+    if (ctx.update.message.text.length >= 3) {
+      const config = {
+        method: 'post',
+        url: 'https://api.openai.com/v1/completions',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer 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',
+        },
+        data: {
+          prompt: ctx.update.message.text,
+          max_tokens: 1000,
+          model: "text-davinci-003",
+          temperature: 0.1,
+        }
+      };
+      axios(config)
+        .then((response) => {
+          console.log(response.data);
+          ctx.reply(response.data.choices[0].text)
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    } else ctx.reply("Can't generate with prompt less than there characters")
   });
 
-  //   console.log(res);
-
-  const message = res;
-  ctx.reply(ctx.update.message.text + message);
-  console.log(ctx.update.message.text + message);
-//   getData(ctx);
 });
+
+
+bot.command("image", (ctx) => {
+  ctx.reply("Please enter your image prompt:");
+  bot.on(message("text"), async (ctx) => {
+    if (ctx.update.message.text.length >= 6) {
+      ctx.reply("Generating Image")
+      const config = {
+        method: 'post',
+        url: 'https://api.openai.com/v1/images/generations',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer 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',
+        },
+        data: {
+          prompt: ctx.update.message.text,
+          size: "1024x1024",
+          n: 1
+        }
+      };
+      axios(config)
+        .then((response) => {
+          const url = response.data.data[0].url
+          ctx.replyWithPhoto(Input.fromURL(url))
+          // ctx.reply(url)
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    } else ctx.reply("Can't generate with prompt less than 6 characters")
+  });
+});
+
+
+
 
 bot.launch();
